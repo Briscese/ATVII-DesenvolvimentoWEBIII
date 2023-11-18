@@ -1,8 +1,19 @@
 package com.autobots.automanager.modelos;
 
+import com.autobots.automanager.entidades.Telefone;
+
 public class TelefoneDTO {
 	private Long id;
     private String ddd;
+    
+    public Telefone toTelefone() {
+        Telefone telefone = new Telefone();
+        telefone.setId(this.getId());
+        telefone.setDdd(this.getDdd());
+        telefone.setNumero(this.getNumero());
+        return telefone;
+    }
+    
     public Long getId() {
 		return id;
 	}

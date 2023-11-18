@@ -2,6 +2,11 @@ package com.autobots.automanager.modelos;
 
 import java.sql.Date;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import com.autobots.automanager.entidades.Cliente;
+import com.autobots.automanager.entidades.Documento;
+import com.autobots.automanager.entidades.Telefone;
 
 public class ClienteDTO {
 	 private Long id;
@@ -12,6 +17,32 @@ public class ClienteDTO {
 	    private List<DocumentoDTO> documentos;
 	    private EnderecoDTO endereco;
 	    private List<TelefoneDTO> telefones;
+	    
+	    public Cliente toCliente() {
+	        Cliente cliente = new Cliente();
+	        cliente.setId(this.getId());
+	        cliente.setNome(this.getNome());
+	        cliente.setNomeSocial(this.getNomeSocial());
+	        cliente.setDataNascimento(new java.util.Date(this.getDataNascimento().getTime()));
+	        cliente.setDataCadastro(new java.util.Date(this.getDataCadastro().getTime()));
+	        
+	
+	        List<Documento> documentos = this.getDocumentos().stream()
+	                .map(DocumentoDTO::toDocumento)
+	                .collect(Collectors.toList());
+	        cliente.setDocumentos(documentos);
+
+	   
+	        cliente.setEndereco(this.getEndereco().toEndereco());
+
+	    
+	        List<Telefone> telefones = this.getTelefones().stream()
+	                .map(TelefoneDTO::toTelefone)
+	                .collect(Collectors.toList());
+	        cliente.setTelefones(telefones);
+	        
+	        return cliente;
+	    }
 	    
 	    public Long getId() {
 			return id;

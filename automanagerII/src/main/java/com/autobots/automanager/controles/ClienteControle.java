@@ -7,6 +7,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -44,25 +48,51 @@ public class ClienteControle {
 	
 
 	@GetMapping("/{id}")
-    public ResponseEntity<ClienteDTO> obterCliente(@PathVariable long id) {
+    public ResponseEntity<EntityModel<ClienteDTO>> obterCliente(@PathVariable long id) {
         List<Cliente> clientes = repositorio.findAll();
-        
+
         Optional<Cliente> clienteOptional = selecionador.selecionar(clientes, id);
-        
+
         if (clienteOptional.isPresent()) {
             Cliente clienteSelecionado = clienteOptional.get();
             ClienteDTO clienteDTO = converterParaDTO(clienteSelecionado);
-            return new ResponseEntity<>(clienteDTO, HttpStatus.OK);
+
+            // Criar links HATEOAS
+            EntityModel<ClienteDTO> resource = EntityModel.of(clienteDTO);
+
+            // Link para obter o próprio cliente
+            Link selfLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ClienteControle.class).obterCliente(id)).withSelfRel();
+            resource.add(selfLink);
+
+            // Link para UPDATE
+            Link updateLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ClienteControle.class).atualizarCliente(id, clienteDTO)).withRel("update");
+            resource.add(updateLink);
+            // Link para DELETE
+            Link deleteLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ClienteControle.class).excluirCliente(id)).withRel("delete");
+            resource.add(deleteLink);
+
+            return new ResponseEntity<>(resource, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
 	@GetMapping
-	public List<ClienteDTO> obterClientes() {
-		List<Cliente> clientes = repositorio.findAll();
-		List<ClienteDTO> clientesDTO = clientes.stream().map(this::converterParaDTO).collect(Collectors.toList());
-		return clientesDTO;
+	public CollectionModel<EntityModel<ClienteDTO>> obterClientes() {
+	    List<Cliente> clientes = repositorio.findAll();
+	    List<EntityModel<ClienteDTO>> clientesDTO = clientes.stream()
+	            .map(cliente -> {
+	                ClienteDTO clienteDTO = converterParaDTO(cliente);
+	                Link selfLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ClienteControle.class).obterCliente(cliente.getId())).withSelfRel();
+	                return EntityModel.of(clienteDTO, selfLink);
+	            })
+	            .collect(Collectors.toList());
+
+	    Link linkSelf = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ClienteControle.class).obterClientes()).withSelfRel();
+	    Link linkPost = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ClienteControle.class).cadastrarCliente(null)).withRel("post");
+
+
+	    return CollectionModel.of(clientesDTO, linkSelf, linkPost);
 	}
 
 	private ClienteDTO converterParaDTO(Cliente cliente) {
@@ -123,33 +153,44 @@ public class ClienteControle {
 	}
 
 	@PostMapping
-    public ResponseEntity<?> cadastrarCliente(@RequestBody Cliente cliente) {
+    public ResponseEntity<EntityModel<Cliente>> cadastrarCliente(@RequestBody Cliente cliente) {
         try {
             Cliente novoCliente = clienteCadastro.cadastrarNovoCliente(cliente);
-            return new ResponseEntity<>(novoCliente, HttpStatus.CREATED);
+
+            // Criar link HATEOAS para o novo cliente
+            Link selfLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ClienteControle.class).obterCliente(novoCliente.getId())).withSelfRel();
+
+            EntityModel<Cliente> resource = EntityModel.of(novoCliente, selfLink);
+            return new ResponseEntity<>(resource, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
 
-	@PutMapping
-	public void atualizarCliente(@RequestBody Cliente atualizacao) {
-		Cliente cliente = repositorio.getById(atualizacao.getId());
-		ClienteAtualizador atualizador = new ClienteAtualizador();
-		atualizador.atualizar(cliente, atualizacao);
-		repositorio.save(cliente);
-	}
+	@PutMapping("/{id}")
+    public ResponseEntity<EntityModel<ClienteDTO>> atualizarCliente(@PathVariable Long id, @RequestBody ClienteDTO clienteDTO) {
+        // Lógica para atualizar o cliente
+        Cliente cliente = repositorio.getById(id);
+        ClienteAtualizador atualizador = new ClienteAtualizador();
+        atualizador.atualizar(cliente, clienteDTO.toCliente()); 
 
+        // Criar link HATEOAS para o cliente atualizado
+        Link selfLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ClienteControle.class).obterCliente(id)).withSelfRel();
+
+        EntityModel<ClienteDTO> resource = EntityModel.of(clienteDTO, selfLink);
+        return new ResponseEntity<>(resource, HttpStatus.OK);
+    }
+	
+	
 	@DeleteMapping("/{id}")
-	public void excluirCliente(@PathVariable Long id) {
-	    // Verifique os logs para garantir que o ID esteja sendo capturado corretamente
-	    System.out.println("Excluindo cliente com ID: " + id);
-	    
-	    Cliente cliente = repositorio.getById(id);
-	    if (cliente != null) {
-	        repositorio.delete(cliente);
-	    } else {
-	        
-	    }
-	}
+    public ResponseEntity<?> excluirCliente(@PathVariable Long id) {
+        // Lógica para excluir o cliente
+        Cliente cliente = repositorio.getById(id);
+        if (cliente != null) {
+            repositorio.delete(cliente);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 }

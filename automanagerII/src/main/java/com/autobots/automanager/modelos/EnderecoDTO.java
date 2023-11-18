@@ -1,5 +1,7 @@
 package com.autobots.automanager.modelos;
 
+import com.autobots.automanager.entidades.Endereco;
+
 public class EnderecoDTO {
 	private Long id;
     private String estado;
@@ -9,6 +11,19 @@ public class EnderecoDTO {
     private String numero;
     private String codigoPostal;
     private String informacoesAdicionais;
+    
+    public Endereco toEndereco() {
+        Endereco endereco = new Endereco();
+        endereco.setId(this.getId());
+        endereco.setEstado(this.getEstado());
+        endereco.setCidade(this.getCidade());
+        endereco.setBairro(this.getBairro());
+        endereco.setRua(this.getRua());
+        endereco.setNumero(this.getNumero());
+        endereco.setCodigoPostal(this.getCodigoPostal());
+        endereco.setInformacoesAdicionais(this.getInformacoesAdicionais());
+        return endereco;
+    }
 
     
     public Long getId() {
