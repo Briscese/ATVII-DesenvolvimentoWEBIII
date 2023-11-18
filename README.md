@@ -12,10 +12,10 @@ O Automanager é um microserviço desenvolvido em Java com o framework Spring Bo
 
 Esta API segue o Modelo de Maturidade de Richardson (RMM) para serviços RESTful. Os níveis são:
 
-Nível 0: O Pântano de POX (Plain Old XML)
-Nível 1: Recursos
-Nível 2: Verbos HTTP
-Nível 3: Controles de Hipermeios
+#### Nível 0: O Pântano de POX (Plain Old XML)
+#### Nível 1: Recursos
+#### Nível 2: Verbos HTTP
+#### Nível 3: Controles de Hipermeios
 Esta API tem como objetivo atingir o Nível 3, fornecendo suporte a HATEOAS (Hypermedia As The Engine Of Application State).
 
 ### Requisitos
